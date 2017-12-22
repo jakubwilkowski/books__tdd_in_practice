@@ -1,1 +1,5 @@
 venv/
+geckodriver
+geckodriver.log
+*.pyc
+*.sqlite3
