@@ -1,9 +1,10 @@
+from django.test import LiveServerTestCase
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
-import unittest
 import time
 
-class NewVisitorTest(unittest.TestCase):
+
+class NewVisitorTest(LiveServerTestCase):
     def setUp(self):
         self.browser = webdriver.Firefox()
         self.browser.implicitly_wait(3)
@@ -21,7 +22,7 @@ class NewVisitorTest(unittest.TestCase):
         # Edith has heard about a cool new online to-do-app. She goes
         # to check out it's homepage
 
-        self.browser.get('http://localhost:8000')
+        self.browser.get(self.live_server_url)
 
         # She notices the page title and header mention to-do lists.
 
@@ -45,6 +46,8 @@ class NewVisitorTest(unittest.TestCase):
         inputbox.send_keys(Keys.ENTER)
         time.sleep(1)
 
+        edith_list_url = self.browser.current_url
+        self.assertRegex(edith_list_url, '/lists/.+')
         self.check_for_row_in_list_table('1: Kupić pawie pióra')
 
         # There is still a text box inviting her to add another item. She
@@ -60,15 +63,36 @@ class NewVisitorTest(unittest.TestCase):
         self.check_for_row_in_list_table('1: Kupić pawie pióra')
         self.check_for_row_in_list_table('2: Użyć pawich piór do zrobienia przynęty')
 
-        # Edith wonders whether the site will remember her list. Then she sees
-        # that the site has generated a unique URL for her -- there is some
-        # explanatory text to that effect.
-        self.fail('Zakończenie testu')
+        # Teraz nowy użytkownik Frankek zaczyna korzystać z witryny
 
+        ## Używamy nowej wersji przeglądarki internetowej, aby mieć pewność, że żadne
+        ## informacje dotyczące Edyty nie zostana ujawnione na przyykład prze cookies
 
-        # She visits that URL - her to-do list is still there.
+        self.browser.quit()
+        self.browser = webdriver.Firefox()
 
-        # Satisfied, she goes back to sleep
+        # Franek odwiedza stronę główną
+        # nie znajduje żadnych śladów listy Edyty
+        self.browser.get(self.live_server_url)
+        page_text = self.browser.find_element_by_tag_name('body').text
+        self.assertNotIn('Kupić pawie pióra', page_text)
+        self.assertNotIn('zrobienia przynęty', page_text)
 
-if __name__ == '__main__':
-    unittest.main(warnings='ignore')
+        # Franek tworzy nowa listę wprowadzając nowy element
+        # Jego lista jest mniej interesujęca niż Edyty...
+        inputbox =  self.browser.find_element_by_id('id_new_item')
+        inputbox.send_keys('Kupić mleko')
+        inputbox.send_keys(Keys.ENTER)
+        time.sleep(1)
+
+        # Franek otrzymuje unikatowy adres URL prowadzący do listy
+        francis_list_url = self.browser.current_url
+        self.assertRegex(francis_list_url, '/lists/.+')
+        self.assertNotEqual(francis_list_url, edith_list_url)
+
+        # Ponownie nie ma zadnego śladu po liscie Edyty
+        page_text = self.browser.find_element_by_tag_name('body').text
+        self.assertNotIn('Kupić pawie pióra', page_text)
+        self.assertIn('Kupić mleko', page_text)
+
+        # Usatysfakcjonowani oboje kłada się spać
