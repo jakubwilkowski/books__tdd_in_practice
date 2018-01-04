@@ -1,10 +1,10 @@
-from django.test import LiveServerTestCase
+from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 import time
 
 
-class NewVisitorTest(LiveServerTestCase):
+class NewVisitorTest(StaticLiveServerTestCase):
     def setUp(self):
         self.browser = webdriver.Firefox()
         self.browser.implicitly_wait(3)
@@ -28,7 +28,7 @@ class NewVisitorTest(LiveServerTestCase):
 
         self.assertIn('Listy rzeczy do zrobienia', self.browser.title)
         header_text = self.browser.find_element_by_tag_name('h1').text
-        self.assertIn('lista', header_text)
+        self.assertIn('listę', header_text)
 
         # She is invited to enter a to-do item straight away
         inputbox = self.browser.find_element_by_id('id_new_item')
@@ -96,3 +96,26 @@ class NewVisitorTest(LiveServerTestCase):
         self.assertIn('Kupić mleko', page_text)
 
         # Usatysfakcjonowani oboje kłada się spać
+
+    def test_layout_and_styling(self):
+        # Edyta przeszła na stronę główną
+        self.browser.get(self.live_server_url)
+        self.browser.set_window_size(1024, 768)
+
+        # Zauważyła, ze pole tekstowe zostało elegancko wyśrodkowane
+        inputbox = self.browser.find_element_by_id('id_new_item')
+        self.assertAlmostEqual(
+            inputbox.location['x'] + inputbox.size['width']/2,
+            512,
+            delta=5
+        )
+
+        # Edyta utworzyła nową listę i zobaczyła,
+        # że pole tekstowe nadal jest wyśrodkowane
+        inputbox.send_keys('testing\n')
+        inputbox = self.browser.find_element_by_id('id_new_item')
+        self.assertAlmostEqual(
+            inputbox.location['x'] + inputbox.size['width']/2,
+            512,
+            delta=5
+        )
